@@ -1,7 +1,7 @@
 # Attestation
 
 - **Full name:** `<Ramana Jhammisetty>`
-- **Email address:** `<venkat6.ram@gmail.com>`
+- **Email address:** `<ramana.personal.work@gmail.com>`
 - **Assignment title:** `AI-Assessment for Readiness: Build an AI-Assisted Software Engineering System — Audit Log Service`
 - **Date started:** `<01-10-2026>`
 - **Date submitted:** `<05-10-2026>`
