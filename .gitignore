@@ -1,0 +1,24 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+coverage/
+
+# IDE and user-specific files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local configuration and secrets
+.env
+.env.*
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
