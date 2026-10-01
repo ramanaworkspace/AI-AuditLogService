@@ -14,6 +14,17 @@ docker compose up -d postgres
 The development database is exposed on `localhost:5432`. Its local-only connection
 settings are in `src/AuditLogService.Api/appsettings.Development.json`.
 
+## Run PostgreSQL persistence integration tests
+
+```powershell
+docker compose up -d postgres-test
+dotnet test tests/AuditLogService.IntegrationTests
+```
+
+The test service uses a separate ephemeral database on `localhost:5433`; its
+container data is not persisted. Set `AUDITLOG_TEST_CONNECTION_STRING` to use a
+different dedicated test database.
+
 ## Restore, build, and test
 
 ```powershell

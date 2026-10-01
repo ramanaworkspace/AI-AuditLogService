@@ -16,5 +16,22 @@ services:
       timeout: 3s
       retries: 10
 
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: audit-log-postgres-test
+    environment:
+      POSTGRES_DB: audit_log_test
+      POSTGRES_USER: audit_log
+      POSTGRES_PASSWORD: audit_log_development
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit_log -d audit_log_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres-data:
