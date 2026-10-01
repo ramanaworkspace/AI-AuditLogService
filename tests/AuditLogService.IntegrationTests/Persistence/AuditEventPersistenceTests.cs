@@ -6,7 +6,8 @@ using Npgsql;
 
 namespace AuditLogService.IntegrationTests.Persistence;
 
-public sealed class AuditEventPersistenceTests(PostgreSqlFixture fixture) : IClassFixture<PostgreSqlFixture>
+[Collection(PostgreSqlCollection.Name)]
+public sealed class AuditEventPersistenceTests(PostgreSqlFixture fixture)
 {
     private readonly PostgreSqlFixture _fixture = fixture;
 

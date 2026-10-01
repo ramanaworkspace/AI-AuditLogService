@@ -1,0 +1,15 @@
+# Test-only analyzer overrides.
+#
+# CA1711 ("identifiers should not have incorrect suffix") flags any type name
+# ending in "Collection" because it can be confused with System.Collections
+# types. xUnit's own documented convention for a collection-definition marker
+# class is exactly "<Something>Collection" (e.g. "DatabaseCollection"), and
+# these marker classes are never collection types nor exposed as a public
+# library API - they exist solely to group test classes under
+# [CollectionDefinition]/[Collection(...)]. Flagging that name as an error
+# fights the framework's own convention without protecting any real
+# consumer, so CA1711 is disabled for test projects only.
+root = false
+
+[*.cs]
+dotnet_diagnostic.CA1711.severity = none
