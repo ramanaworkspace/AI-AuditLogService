@@ -1,7 +1,12 @@
+using AuditLogService.Api.Endpoints;
+using AuditLogService.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+
+builder.Services.AddAuditLogInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
@@ -11,6 +16,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
+app.MapAuditEventEndpoints();
 
 app.Run();
 

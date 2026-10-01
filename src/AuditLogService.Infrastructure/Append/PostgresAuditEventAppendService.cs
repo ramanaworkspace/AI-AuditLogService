@@ -70,6 +70,16 @@ public sealed class PostgresAuditEventAppendService(
 
         // 5, 6 & 7. Construct the immutable event (server-assigned EventId and
         // Timestamp), canonically serialize it, and compute its content hash.
+        //
+        // The timestamp is truncated to microsecond precision *before* hashing. PostgreSQL's
+        // "timestamp with time zone" column only stores microsecond precision (6 fractional
+        // digits), while DateTimeOffset.UtcNow carries 100ns-tick precision (7 fractional
+        // digits). Without this truncation, the content hash computed here (from the
+        // full-precision in-memory value) would never match the hash recomputed later from
+        // the value read back from the database, causing every chain verification to report
+        // a false ContentHashMismatch. Truncating up front keeps the hashed value and the
+        // persisted/round-tripped value bit-for-bit identical.
+        var timestamp = TruncateToMicroseconds(DateTimeOffset.UtcNow);
         var eventData = new AuditEventData(
             Guid.NewGuid(),
             nextSequenceNumber,
@@ -78,7 +88,7 @@ public sealed class PostgresAuditEventAppendService(
             request.ResourceType,
             request.ResourceId,
             request.Payload,
-            DateTimeOffset.UtcNow,
+            timestamp,
             previousHash);
         var auditEvent = AuditEvent.Create(eventData, eventHasher);
 
@@ -98,5 +108,17 @@ public sealed class PostgresAuditEventAppendService(
         await transaction.CommitAsync(cancellationToken);
 
         return auditEvent;
+    }
+
+    /// <summary>
+    /// Truncates (rounds down) a timestamp to microsecond precision, discarding any
+    /// sub-microsecond (100ns-tick) remainder. This matches the precision PostgreSQL's
+    /// "timestamp with time zone" column actually stores, so the value hashed at append
+    /// time is identical to the value that will later be read back from the database.
+    /// </summary>
+    private static DateTimeOffset TruncateToMicroseconds(DateTimeOffset value)
+    {
+        var remainder = value.Ticks % TimeSpan.TicksPerMicrosecond;
+        return remainder == 0 ? value : value.AddTicks(-remainder);
     }
 }

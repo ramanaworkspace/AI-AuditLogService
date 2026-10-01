@@ -1,3 +1,11 @@
+// Disables all test parallelization for this assembly. Every integration test here shares the
+// same physical PostgreSQL database and resets it via PostgreSqlFixture.ResetAsync(); xUnit's
+// default collection-based parallelization only guarantees sequencing *within* a collection, so
+// without this assembly-wide override, test classes could still run concurrently against the
+// same database and corrupt each other's state (duplicate sequence numbers, leaked rows from a
+// concurrently-running test's inserts, etc.).
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace AuditLogService.IntegrationTests.Persistence;
 
 /// <summary>

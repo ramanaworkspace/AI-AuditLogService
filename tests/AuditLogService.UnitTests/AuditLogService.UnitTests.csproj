@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AuditLogService.Domain\AuditLogService.Domain.csproj" />
+    <ProjectReference Include="..\..\src\AuditLogService.Application\AuditLogService.Application.csproj" />
   </ItemGroup>
 
 </Project>
