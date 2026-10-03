@@ -3,12 +3,14 @@ using AuditLogService.Application.Append;
 using AuditLogService.Application.Query;
 using AuditLogService.Application.Redaction;
 using AuditLogService.Application.Retention;
+using AuditLogService.Application.Reporting;
 using AuditLogService.Application.Verification;
 using AuditLogService.Domain;
 using AuditLogService.Infrastructure.Append;
 using AuditLogService.Infrastructure.Persistence;
 using AuditLogService.Infrastructure.Query;
 using AuditLogService.Infrastructure.Retention;
+using AuditLogService.Infrastructure.Reporting;
 using AuditLogService.Infrastructure.Verification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -73,6 +75,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IAuditEventAppendService, PostgresAuditEventAppendService>();
         services.AddScoped<IAuditEventQueryService, PostgresAuditEventQueryService>();
         services.AddScoped<IChainVerificationService, PostgresChainVerificationService>();
+        services.AddScoped<IAccountAccessReportService, PostgresAccountAccessReportService>();
         services.AddOptions<RetentionOptions>()
             .Configure<IConfiguration>((options, settings) =>
             {

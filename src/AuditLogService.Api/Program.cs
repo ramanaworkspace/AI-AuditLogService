@@ -24,6 +24,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 app.MapAuditEventEndpoints();
+app.MapAccountAccessReport();
 
 app.Run();
 

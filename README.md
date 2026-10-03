@@ -63,6 +63,11 @@ and the boundary between safe export projection and future verifiable bundles.
 Apply pending EF migrations before starting the updated API; integration tests
 apply them automatically only to the dedicated test database.
 
+Scenario C exposes `GET /api/v1/reports/account-access` with explicit inclusive
+start/end times, a fixed account-access event allowlist, deterministic redacted
+JSON, and snapshot global-chain status. See [Scenario C](docs/scenarios/scenario-c.md)
+for the taxonomy, schema, validation, and non-regulatory scope.
+
 Infrastructure endpoints:
 
 - `GET /health`

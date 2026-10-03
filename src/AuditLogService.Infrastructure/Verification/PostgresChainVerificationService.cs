@@ -20,7 +20,14 @@ public sealed class PostgresChainVerificationService(
         // Events and metadata must describe one snapshot, even during concurrent appends.
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             IsolationLevel.RepeatableRead, cancellationToken);
+        var result = await VerifySnapshotAsync(dbContext, eventHasher, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
 
+    internal static async Task<ChainVerificationResult> VerifySnapshotAsync(
+        AuditLogDbContext dbContext, IEventHasher eventHasher, CancellationToken cancellationToken)
+    {
         var head = await dbContext.ChainMetadata
             .AsNoTracking()
             .SingleAsync(metadata => metadata.ChainId == ChainMetadata.GlobalChainId, cancellationToken);
@@ -37,7 +44,6 @@ public sealed class PostgresChainVerificationService(
             where record.SequenceNumber <= result.EventsVerified
             select archive.EventId).LongCountAsync(cancellationToken);
         result = result with { ArchivedEventsVerified = archivedCount };
-        await transaction.CommitAsync(cancellationToken);
 
         if (result.ViolationType == ChainViolationType.SequenceGap
             && records.Count < head.HeadSequenceNumber)

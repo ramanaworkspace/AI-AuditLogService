@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:5115
+
+### Inclusive account access report
+GET {{baseUrl}}/api/v1/reports/account-access?startTime=2026-10-03T00:00:00Z&endTime=2026-10-04T00:00:00Z
+Accept: application/json
+
+### Explicit resource scope and offset-equivalent instants
+GET {{baseUrl}}/api/v1/reports/account-access?startTime=2026-10-03T05:30:00%2B05:30&endTime=2026-10-04T05:30:00%2B05:30&resourceType=CLIENT_ACCOUNT
+
+### Unsupported resource type: 400 validation problem
+GET {{baseUrl}}/api/v1/reports/account-access?startTime=2026-10-03T00:00:00Z&endTime=2026-10-04T00:00:00Z&resourceType=DOCUMENT
+
+### Reversed interval: 400 validation problem
+GET {{baseUrl}}/api/v1/reports/account-access?startTime=2026-10-04T00:00:00Z&endTime=2026-10-03T00:00:00Z
