@@ -78,6 +78,12 @@ public sealed class PostgresAuditEventQueryService(IDbContextFactory<AuditLogDbC
 
         var nextCursor = hasMore ? AuditEventCursor.Encode(items[^1].SequenceNumber) : null;
 
-        return new AuditEventQueryResult(items, nextCursor);
+        var eventIds = items.Select(item => item.EventId).ToArray();
+        var archives = await dbContext.AuditEventArchives.AsNoTracking()
+            .Where(archive => eventIds.Contains(archive.EventId))
+            .ToDictionaryAsync(archive => archive.EventId,
+                archive => new DateTimeOffset(archive.ArchivedAt), cancellationToken);
+
+        return new AuditEventQueryResult(items, nextCursor) { ArchivedAtByEventId = archives };
     }
 }

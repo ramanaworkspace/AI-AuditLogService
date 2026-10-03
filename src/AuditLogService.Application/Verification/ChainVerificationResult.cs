@@ -8,6 +8,8 @@ namespace AuditLogService.Application.Verification;
 /// reports how many events, starting from sequence number 1, were confirmed consistent
 /// before that point (or the total chain length when <see cref="IsValid"/> is
 /// <see langword="true"/>).
+/// For a missing record, the identifier is unavailable and is null; the sequence
+/// identifies the earliest expected missing position, not its surviving successor.
 /// </remarks>
 public sealed record ChainVerificationResult(
     bool IsValid,
@@ -17,6 +19,9 @@ public sealed record ChainVerificationResult(
     ChainViolationType? ViolationType,
     string? Detail)
 {
+    /// <summary>Archived records in the successfully verified prefix.</summary>
+    public long ArchivedEventsVerified { get; init; }
+
     /// <summary>Creates a result reporting that the entire chain is internally consistent.</summary>
     public static ChainVerificationResult Valid(long eventsVerified) =>
         new(true, eventsVerified, null, null, null, null);
@@ -24,7 +29,7 @@ public sealed record ChainVerificationResult(
     /// <summary>Creates a result reporting the first inconsistency found while walking the chain.</summary>
     public static ChainVerificationResult Invalid(
         long eventsVerified,
-        Guid firstInconsistentEventId,
+        Guid? firstInconsistentEventId,
         long firstInconsistentSequenceNumber,
         ChainViolationType violationType,
         string detail) =>

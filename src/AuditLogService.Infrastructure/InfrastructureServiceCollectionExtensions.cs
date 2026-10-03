@@ -1,14 +1,18 @@
+using System.Globalization;
 using AuditLogService.Application.Append;
 using AuditLogService.Application.Query;
+using AuditLogService.Application.Retention;
 using AuditLogService.Application.Verification;
 using AuditLogService.Domain;
 using AuditLogService.Infrastructure.Append;
 using AuditLogService.Infrastructure.Persistence;
 using AuditLogService.Infrastructure.Query;
+using AuditLogService.Infrastructure.Retention;
 using AuditLogService.Infrastructure.Verification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace AuditLogService.Infrastructure;
 
@@ -52,6 +56,19 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IAuditEventAppendService, PostgresAuditEventAppendService>();
         services.AddScoped<IAuditEventQueryService, PostgresAuditEventQueryService>();
         services.AddScoped<IChainVerificationService, PostgresChainVerificationService>();
+        services.AddOptions<RetentionOptions>()
+            .Configure<IConfiguration>((options, settings) =>
+            {
+                var window = settings[$"{RetentionOptions.SectionName}:Window"];
+                if (window is not null)
+                {
+                    options.Window = TimeSpan.Parse(window, CultureInfo.InvariantCulture);
+                }
+            })
+            .Validate(options => options.Window > TimeSpan.Zero, "Retention:Window must be positive.")
+            .ValidateOnStart();
+        services.TryAddSingleton<TimeProvider>(TimeProvider.System);
+        services.AddScoped<IAuditEventRetentionService, PostgresAuditEventRetentionService>();
 
         return services;
     }

@@ -10,4 +10,8 @@ namespace AuditLogService.Application.Query;
 /// An opaque token to pass as the next request's cursor to fetch the following page, or
 /// <see langword="null"/> when there are no more events after this page.
 /// </param>
-public sealed record AuditEventQueryResult(IReadOnlyList<AuditEvent> Items, string? NextCursor);
+public sealed record AuditEventQueryResult(IReadOnlyList<AuditEvent> Items, string? NextCursor)
+{
+    public IReadOnlyDictionary<Guid, DateTimeOffset> ArchivedAtByEventId { get; init; } =
+        new Dictionary<Guid, DateTimeOffset>();
+}

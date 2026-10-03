@@ -13,6 +13,9 @@ public sealed record ChainVerificationResponse(
     ChainViolationType? ViolationType,
     string? Detail)
 {
+    /// <summary>Archived records in the successfully verified prefix.</summary>
+    public long ArchivedEventsVerified { get; init; }
+
     public static ChainVerificationResponse FromResult(ChainVerificationResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -23,6 +26,7 @@ public sealed record ChainVerificationResponse(
             result.FirstInconsistentEventId,
             result.FirstInconsistentSequenceNumber,
             result.ViolationType,
-            result.Detail);
+            result.Detail)
+        { ArchivedEventsVerified = result.ArchivedEventsVerified };
     }
 }

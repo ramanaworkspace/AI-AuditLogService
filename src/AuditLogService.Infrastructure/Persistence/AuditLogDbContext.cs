@@ -8,6 +8,8 @@ public sealed class AuditLogDbContext(DbContextOptions<AuditLogDbContext> option
 
     public DbSet<ChainMetadata> ChainMetadata => Set<ChainMetadata>();
 
+    public DbSet<AuditEventArchive> AuditEventArchives => Set<AuditEventArchive>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuditLogDbContext).Assembly);

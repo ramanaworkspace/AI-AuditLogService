@@ -43,6 +43,9 @@ must not control chain order. `Timestamp` is assigned by the server in UTC.
   is encoded as UTF-8. Unicode string values round trip without loss.
 - `timestamp` is emitted in UTC as
   `yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'`, with exactly seven fractional digits.
+  The PostgreSQL append path truncates the server-assigned value to microsecond
+  precision before hashing; the seventh digit is therefore zero. This preserves
+  the hashed value across persistence without changing the canonical format.
 - JSON `null` values inside a payload are preserved; properties are not omitted.
   The payload itself must be a JSON object.
 - Booleans and null use the lowercase JSON literals `true`, `false`, and `null`.

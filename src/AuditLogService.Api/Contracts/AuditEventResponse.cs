@@ -18,7 +18,11 @@ public sealed record AuditEventResponse(
     string PreviousHash,
     string ContentHash)
 {
-    public static AuditEventResponse FromDomain(AuditEvent auditEvent)
+    public DateTimeOffset? ArchivedAt { get; init; }
+
+    public bool IsArchived => ArchivedAt.HasValue;
+
+    public static AuditEventResponse FromDomain(AuditEvent auditEvent, DateTimeOffset? archivedAt = null)
     {
         ArgumentNullException.ThrowIfNull(auditEvent);
 
@@ -32,6 +36,7 @@ public sealed record AuditEventResponse(
             auditEvent.Payload,
             auditEvent.Timestamp,
             auditEvent.PreviousHash,
-            auditEvent.ContentHash);
+            auditEvent.ContentHash)
+        { ArchivedAt = archivedAt };
     }
 }

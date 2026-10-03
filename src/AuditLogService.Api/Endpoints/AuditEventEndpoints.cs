@@ -136,7 +136,9 @@ public static class AuditEventEndpoints
 
         return Results.Ok(
             new AuditEventListResponse(
-                result.Items.Select(AuditEventResponse.FromDomain).ToList(),
+                result.Items.Select(item => AuditEventResponse.FromDomain(
+                    item, result.ArchivedAtByEventId.TryGetValue(item.EventId, out var archivedAt)
+                        ? archivedAt : null)).ToList(),
                 result.NextCursor));
     }
 

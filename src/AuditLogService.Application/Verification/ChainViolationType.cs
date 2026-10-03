@@ -28,5 +28,14 @@ public enum ChainViolationType
     /// The first event in the chain (sequence number 1) does not have
     /// <c>PreviousHash = GENESIS</c>.
     /// </summary>
-    InvalidGenesisRelationship
+    InvalidGenesisRelationship,
+
+    /// <summary>
+    /// An expected record is absent relative to the persisted chain head.
+    /// This is evidence of missing data, not proof of its cause.
+    /// </summary>
+    MissingRecord,
+
+    /// <summary>The verified chain tip does not match the persisted chain head.</summary>
+    ChainHeadMismatch
 }

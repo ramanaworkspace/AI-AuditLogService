@@ -39,7 +39,22 @@ dotnet test AuditLogService.sln --no-build
 dotnet run --project src/AuditLogService.Api
 ```
 
-The initial scaffold exposes only infrastructure endpoints:
+The service exposes the Scenario A endpoints:
+
+- `POST /api/v1/audit-events`
+- `GET /api/v1/audit-events`
+- `GET /api/v1/audit-events/verify`
+
+See [Scenario A](docs/scenarios/scenario-a.md) for the API contract, tampering
+validation, violation classifications, and limitations.
+
+Scenario B retention is implemented as an explicit service operation. Archive
+metadata is separate from hashed events; query responses expose archive status
+and verification still checks all records. See
+[retention](docs/scenarios/scenario-b-retention.md) for configuration, migration,
+service invocation, and scope boundaries.
+
+Infrastructure endpoints:
 
 - `GET /health`
 - `GET /openapi/v1.json` when running in the Development environment

@@ -4,6 +4,7 @@ using System.Text.Json;
 using AuditLogService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AuditLogService.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AuditLogDbContext))]
-    partial class AuditLogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003055427_AddAuditEventArchives")]
+    partial class AddAuditEventArchives
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
