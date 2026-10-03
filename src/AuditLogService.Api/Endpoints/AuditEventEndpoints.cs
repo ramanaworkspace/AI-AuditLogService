@@ -2,6 +2,7 @@ using System.Text.Json;
 using AuditLogService.Api.Contracts;
 using AuditLogService.Application.Append;
 using AuditLogService.Application.Query;
+using AuditLogService.Application.Redaction;
 using AuditLogService.Application.Verification;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +15,8 @@ public static class AuditEventEndpoints
 {
     private const int DefaultPageLimit = 50;
     private const int MaxPageLimit = 500;
+    private static readonly Action<ILogger, Exception?> LogInvalidPayload = LoggerMessage.Define(
+        LogLevel.Warning, new EventId(1001, "InvalidAuditPayload"), "Rejected invalid audit payload.");
 
     /// <summary>
     /// Maps <c>POST /api/v1/audit-events</c>, <c>GET /api/v1/audit-events</c>, and
@@ -36,6 +39,8 @@ public static class AuditEventEndpoints
     private static async Task<IResult> CreateAuditEventAsync(
         CreateAuditEventRequest request,
         IAuditEventAppendService appendService,
+        IPayloadProtector payloadProtector,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
@@ -70,18 +75,28 @@ public static class AuditEventEndpoints
             return Results.ValidationProblem(errors);
         }
 
-        var appended = await appendService.AppendAsync(
-            new AppendAuditEventRequest(
-                request.EventType!,
-                request.ActorId!,
-                request.ResourceType!,
-                request.ResourceId!,
-                request.Payload),
-            cancellationToken);
+        AuditLogService.Domain.AuditEvent appended;
+        try
+        {
+            appended = await appendService.AppendAsync(
+                new AppendAuditEventRequest(
+                    request.EventType!,
+                    request.ActorId!,
+                    request.ResourceType!,
+                    request.ResourceId!,
+                    request.Payload),
+                cancellationToken);
+        }
+        catch (PayloadProtectionException)
+        {
+            LogInvalidPayload(loggerFactory.CreateLogger("AuditEventValidation"), null);
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            { ["payload"] = ["Payload contains invalid or reserved JSON properties."] });
+        }
 
         return Results.Created(
             $"/api/v1/audit-events/{appended.EventId}",
-            AuditEventResponse.FromDomain(appended));
+            AuditEventResponse.FromDomain(appended, readPayload: payloadProtector.Project(appended.Payload)));
     }
 
     private static async Task<IResult> QueryAuditEventsAsync(
@@ -138,7 +153,7 @@ public static class AuditEventEndpoints
             new AuditEventListResponse(
                 result.Items.Select(item => AuditEventResponse.FromDomain(
                     item, result.ArchivedAtByEventId.TryGetValue(item.EventId, out var archivedAt)
-                        ? archivedAt : null)).ToList(),
+                        ? archivedAt : null, result.ReadPayloadByEventId[item.EventId])).ToList(),
                 result.NextCursor));
     }
 

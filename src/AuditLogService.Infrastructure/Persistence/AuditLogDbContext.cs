@@ -10,6 +10,8 @@ public sealed class AuditLogDbContext(DbContextOptions<AuditLogDbContext> option
 
     public DbSet<AuditEventArchive> AuditEventArchives => Set<AuditEventArchive>();
 
+    public DbSet<AuditEventReadProjection> AuditEventReadProjections => Set<AuditEventReadProjection>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuditLogDbContext).Assembly);

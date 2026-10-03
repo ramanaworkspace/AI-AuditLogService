@@ -1,4 +1,5 @@
 using AuditLogService.Domain;
+using System.Text.Json;
 
 namespace AuditLogService.Application.Query;
 
@@ -14,4 +15,7 @@ public sealed record AuditEventQueryResult(IReadOnlyList<AuditEvent> Items, stri
 {
     public IReadOnlyDictionary<Guid, DateTimeOffset> ArchivedAtByEventId { get; init; } =
         new Dictionary<Guid, DateTimeOffset>();
+
+    public IReadOnlyDictionary<Guid, JsonElement> ReadPayloadByEventId { get; init; } =
+        new Dictionary<Guid, JsonElement>();
 }

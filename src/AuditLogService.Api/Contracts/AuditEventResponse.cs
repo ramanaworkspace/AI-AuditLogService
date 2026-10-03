@@ -22,7 +22,8 @@ public sealed record AuditEventResponse(
 
     public bool IsArchived => ArchivedAt.HasValue;
 
-    public static AuditEventResponse FromDomain(AuditEvent auditEvent, DateTimeOffset? archivedAt = null)
+    public static AuditEventResponse FromDomain(
+        AuditEvent auditEvent, DateTimeOffset? archivedAt = null, JsonElement? readPayload = null)
     {
         ArgumentNullException.ThrowIfNull(auditEvent);
 
@@ -33,7 +34,7 @@ public sealed record AuditEventResponse(
             auditEvent.ActorId,
             auditEvent.ResourceType,
             auditEvent.ResourceId,
-            auditEvent.Payload,
+            readPayload ?? auditEvent.Payload,
             auditEvent.Timestamp,
             auditEvent.PreviousHash,
             auditEvent.ContentHash)

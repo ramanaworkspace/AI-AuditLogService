@@ -78,6 +78,16 @@ record's `previousHash` equals the preceding record's `contentHash`.
 
 ## Limitations
 
+For new appends, configured sensitive payload values are replaced with salted
+commitment envelopes **before** event canonicalization. The envelope (scheme,
+salt, and digest), not the original value or redacted projection, is included in
+the event hash. A stored committed event still hashes deterministically; fresh
+ingests use fresh salts and need not produce identical commitments. Read/export
+projections cannot independently reproduce the ContentHash. See
+[Scenario B redaction](scenarios/scenario-b-redaction.md) for construction,
+configuration, and privacy limitations. Existing chained plaintext is not
+rewritten.
+
 The chain is tamper-evident, not tamper-proof. Recomputing later hashes after
 editing a record can produce a self-consistent replacement chain unless a
 trusted checkpoint, signature, or separately protected copy exists. Hash

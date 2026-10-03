@@ -39,6 +39,21 @@ namespace AuditLogService.Infrastructure.Persistence.Migrations
                     b.ToTable("audit_event_archives", (string)null);
                 });
 
+            modelBuilder.Entity("AuditLogService.Infrastructure.Persistence.AuditEventReadProjection", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<JsonElement>("Payload")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.HasKey("EventId");
+
+                    b.ToTable("audit_event_read_projections", (string)null);
+                });
+
             modelBuilder.Entity("AuditLogService.Infrastructure.Persistence.AuditEventRecord", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -174,6 +189,15 @@ namespace AuditLogService.Infrastructure.Persistence.Migrations
                     b.HasOne("AuditLogService.Infrastructure.Persistence.AuditEventRecord", null)
                         .WithOne()
                         .HasForeignKey("AuditLogService.Infrastructure.Persistence.AuditEventArchive", "EventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AuditLogService.Infrastructure.Persistence.AuditEventReadProjection", b =>
+                {
+                    b.HasOne("AuditLogService.Infrastructure.Persistence.AuditEventRecord", null)
+                        .WithOne()
+                        .HasForeignKey("AuditLogService.Infrastructure.Persistence.AuditEventReadProjection", "EventId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

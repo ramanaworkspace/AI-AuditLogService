@@ -2,6 +2,7 @@ using AuditLogService.IntegrationTests.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace AuditLogService.IntegrationTests.Api;
 
@@ -18,6 +19,10 @@ public sealed class AuditEventApiFactory : WebApplicationFactory<Program>
     /// </summary>
     public string ConnectionString { get; set; } = string.Empty;
 
+    public IReadOnlyDictionary<string, string?>? AdditionalConfiguration { get; set; }
+
+    public ILoggerProvider? LogProvider { get; set; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureAppConfiguration((_, configBuilder) =>
@@ -26,6 +31,14 @@ public sealed class AuditEventApiFactory : WebApplicationFactory<Program>
             {
                 ["ConnectionStrings:AuditLogDatabase"] = ConnectionString,
             });
+            if (AdditionalConfiguration is not null)
+            {
+                configBuilder.AddInMemoryCollection(AdditionalConfiguration);
+            }
         });
+        if (LogProvider is not null)
+        {
+            builder.ConfigureLogging(logging => logging.AddProvider(LogProvider));
+        }
     }
 }

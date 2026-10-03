@@ -1,4 +1,5 @@
 using AuditLogService.Application.Append;
+using AuditLogService.Application.Redaction;
 using AuditLogService.Domain;
 using AuditLogService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -41,13 +42,15 @@ namespace AuditLogService.Infrastructure.Append;
 /// </remarks>
 public sealed class PostgresAuditEventAppendService(
     IDbContextFactory<AuditLogDbContext> dbContextFactory,
-    IEventHasher eventHasher) : IAuditEventAppendService
+    IEventHasher eventHasher,
+    IPayloadProtector payloadProtector) : IAuditEventAppendService
 {
     public async Task<AuditEvent> AppendAsync(
         AppendAuditEventRequest request,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        var protectedPayload = payloadProtector.Protect(request.Payload);
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -87,13 +90,18 @@ public sealed class PostgresAuditEventAppendService(
             request.ActorId,
             request.ResourceType,
             request.ResourceId,
-            request.Payload,
+            protectedPayload,
             timestamp,
             previousHash);
         var auditEvent = AuditEvent.Create(eventData, eventHasher);
 
         // 8. Insert the event.
         dbContext.AuditEvents.Add(AuditEventRecord.FromDomain(auditEvent));
+        dbContext.AuditEventReadProjections.Add(new AuditEventReadProjection
+        {
+            EventId = auditEvent.EventId,
+            Payload = payloadProtector.Project(protectedPayload)
+        });
 
         // 9. Update chain-head metadata (tracked entity; applied by SaveChangesAsync
         // together with the insert above, in the same round trip).

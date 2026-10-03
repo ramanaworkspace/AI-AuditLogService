@@ -46,6 +46,13 @@ public sealed class CanonicalEventSerializer : ICanonicalEventSerializer
         return Encoding.UTF8.GetBytes(builder.ToString());
     }
 
+    public static byte[] SerializeValue(JsonElement value)
+    {
+        var builder = new StringBuilder();
+        WriteCanonicalValue(builder, value);
+        return Encoding.UTF8.GetBytes(builder.ToString());
+    }
+
     private static void WriteCanonicalValue(StringBuilder builder, JsonElement value)
     {
         switch (value.ValueKind)
@@ -64,7 +71,7 @@ public sealed class CanonicalEventSerializer : ICanonicalEventSerializer
                         StringComparison.Ordinal))
                     {
                         throw new ArgumentException(
-                            $"Payload contains a duplicate property name: {properties[index].Name}.",
+                            "Payload contains duplicate property names.",
                             nameof(value));
                     }
 

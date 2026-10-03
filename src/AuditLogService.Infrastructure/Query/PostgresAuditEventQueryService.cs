@@ -1,4 +1,6 @@
 using AuditLogService.Application.Query;
+using AuditLogService.Application.Redaction;
+using AuditLogService.Domain;
 using AuditLogService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +16,8 @@ namespace AuditLogService.Infrastructure.Query;
 /// unique <c>ux_audit_events_sequence_number</c> used for ordering and the pagination cursor) -
 /// see <see cref="AuditEventRecordConfiguration"/>.
 /// </remarks>
-public sealed class PostgresAuditEventQueryService(IDbContextFactory<AuditLogDbContext> dbContextFactory)
+public sealed class PostgresAuditEventQueryService(
+    IDbContextFactory<AuditLogDbContext> dbContextFactory, IPayloadProtector payloadProtector)
     : IAuditEventQueryService
 {
     public async Task<AuditEventQueryResult> QueryAsync(
@@ -84,6 +87,32 @@ public sealed class PostgresAuditEventQueryService(IDbContextFactory<AuditLogDbC
             .ToDictionaryAsync(archive => archive.EventId,
                 archive => new DateTimeOffset(archive.ArchivedAt), cancellationToken);
 
-        return new AuditEventQueryResult(items, nextCursor) { ArchivedAtByEventId = archives };
+        var projections = await dbContext.AuditEventReadProjections.AsNoTracking()
+            .Where(projection => eventIds.Contains(projection.EventId))
+            .ToDictionaryAsync(projection => projection.EventId, projection => projection.Payload, cancellationToken);
+        var safePayloads = new Dictionary<Guid, System.Text.Json.JsonElement>();
+        foreach (var item in items)
+        {
+            var expected = payloadProtector.Project(item.Payload);
+            if (projections.TryGetValue(item.EventId, out var stored))
+            {
+                var safeStored = payloadProtector.Project(stored);
+                if (!CanonicalEventSerializer.SerializeValue(expected).AsSpan()
+                    .SequenceEqual(CanonicalEventSerializer.SerializeValue(safeStored)))
+                {
+                    throw new InvalidOperationException("Stored read projection does not match immutable event content.");
+                }
+
+                safePayloads.Add(item.EventId, safeStored);
+            }
+            else
+            {
+                // Legacy events have no separately stored projection; never rewrite their hashes.
+                safePayloads.Add(item.EventId, expected);
+            }
+        }
+
+        return new AuditEventQueryResult(items, nextCursor)
+        { ArchivedAtByEventId = archives, ReadPayloadByEventId = safePayloads };
     }
 }

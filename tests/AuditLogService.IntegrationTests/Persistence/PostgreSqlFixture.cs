@@ -1,4 +1,5 @@
 using AuditLogService.Application.Append;
+using AuditLogService.Application.Redaction;
 using AuditLogService.Application.Retention;
 using AuditLogService.Domain;
 using AuditLogService.Infrastructure.Append;
@@ -42,7 +43,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     {
         var serializer = new CanonicalEventSerializer();
         var hasher = new Sha256EventHasher(serializer);
-        return new PostgresAuditEventAppendService(_dbContextFactory, hasher);
+        return new PostgresAuditEventAppendService(_dbContextFactory, hasher, new CommitmentPayloadProtector([]));
     }
 
     public IAuditEventRetentionService CreateRetentionService(TimeSpan window, TimeProvider clock) =>
@@ -60,7 +61,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     public async Task ResetAsync()
     {
         await using var dbContext = CreateDbContext();
-        await dbContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE audit_event_archives, audit_events");
+        await dbContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE audit_event_read_projections, audit_event_archives, audit_events");
         await dbContext.Database.ExecuteSqlRawAsync(
             "UPDATE chain_metadata SET head_sequence_number = 0, head_hash = 'GENESIS' WHERE chain_id = 1");
     }

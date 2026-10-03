@@ -1,6 +1,7 @@
 using System.Globalization;
 using AuditLogService.Application.Append;
 using AuditLogService.Application.Query;
+using AuditLogService.Application.Redaction;
 using AuditLogService.Application.Retention;
 using AuditLogService.Application.Verification;
 using AuditLogService.Domain;
@@ -53,6 +54,22 @@ public static class InfrastructureServiceCollectionExtensions
         });
         services.AddSingleton<ICanonicalEventSerializer, CanonicalEventSerializer>();
         services.AddSingleton<IEventHasher, Sha256EventHasher>();
+        services.AddSingleton<IPayloadProtector>(provider =>
+        {
+            var section = provider.GetRequiredService<IConfiguration>().GetSection("Redaction:SensitivePaths");
+            if (section.Value is not null || section.GetChildren().Any(child =>
+                !int.TryParse(child.Key, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
+            {
+                throw new InvalidOperationException("Redaction:SensitivePaths must be a string array.");
+            }
+
+            var paths = section.GetChildren().Select(child =>
+                child.GetChildren().Any() || child.Value is null
+                    ? throw new InvalidOperationException("Redaction paths must contain strings.")
+                    : child.Value);
+            return new CommitmentPayloadProtector(paths);
+        });
+        services.AddSingleton<IAuditEventExportProjector, AuditEventExportProjector>();
         services.AddScoped<IAuditEventAppendService, PostgresAuditEventAppendService>();
         services.AddScoped<IAuditEventQueryService, PostgresAuditEventQueryService>();
         services.AddScoped<IChainVerificationService, PostgresChainVerificationService>();

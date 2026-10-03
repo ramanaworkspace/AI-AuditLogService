@@ -54,6 +54,15 @@ and verification still checks all records. See
 [retention](docs/scenarios/scenario-b-retention.md) for configuration, migration,
 service invocation, and scope boundaries.
 
+Scenario B structured redaction replaces configured sensitive payload values
+with immutable salted commitments before hashing. Reads and the export projection
+mask them without changing chain evidence. See
+[redaction](docs/scenarios/scenario-b-redaction.md) for JSON pointer configuration,
+the additive read-projection migration, test coverage, public-salt limitations,
+and the boundary between safe export projection and future verifiable bundles.
+Apply pending EF migrations before starting the updated API; integration tests
+apply them automatically only to the dedicated test database.
+
 Infrastructure endpoints:
 
 - `GET /health`
