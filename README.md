@@ -68,6 +68,14 @@ start/end times, a fixed account-access event allowlist, deterministic redacted
 JSON, and snapshot global-chain status. See [Scenario C](docs/scenarios/scenario-c.md)
 for the taxonomy, schema, validation, and non-regulatory scope.
 
+Scenario D adds repeatable 50-writer PostgreSQL contention and failure/recovery
+correctness tests without changing the global chain architecture. See
+[Scenario D](docs/scenarios/scenario-d.md) for invariants, retry boundaries,
+test commands, and the distinction from performance benchmarking.
+The [load-test harness](tests/AuditLogService.LoadTests/) also measures real HTTP
+appends and saves JSON/Markdown evidence; [Scenario D](docs/scenarios/scenario-d.md)
+contains exact execution commands and the measured local result.
+
 Infrastructure endpoints:
 
 - `GET /health`
