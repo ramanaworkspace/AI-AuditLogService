@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -142,28 +143,37 @@ public sealed class AuditEventApiTests : IDisposable
         Assert.True(problem.GetProperty("errors").TryGetProperty("payload", out _));
     }
 
-    [Fact]
-    public async Task GetFiltersByActorResourceAndEventType()
+    [Theory]
+    [InlineData("actorId", "actor-1", "0,2")]
+    [InlineData("resourceType", "document", "0,1,3")]
+    [InlineData("resourceId", "doc-1", "0,3")]
+    [InlineData("eventType", "document.created", "0,3")]
+    public async Task GetFiltersIndividuallyBySupportedFields(
+        string filterName,
+        string filterValue,
+        string expectedIndices)
     {
         await _fixture.ResetAsync();
 
-        await _client.PostAsJsonAsync(
-            "/api/v1/audit-events",
+        var first = await AppendAsync(
             CreateRequestBody(eventType: "document.created", actorId: "actor-1", resourceType: "document", resourceId: "doc-1"));
-        await _client.PostAsJsonAsync(
-            "/api/v1/audit-events",
+        var second = await AppendAsync(
             CreateRequestBody(eventType: "document.updated", actorId: "actor-2", resourceType: "document", resourceId: "doc-2"));
-        await _client.PostAsJsonAsync(
-            "/api/v1/audit-events",
+        var third = await AppendAsync(
             CreateRequestBody(eventType: "user.login", actorId: "actor-1", resourceType: "user", resourceId: "user-1"));
+        var fourth = await AppendAsync(
+            CreateRequestBody(eventType: "document.created", actorId: "actor-2", resourceType: "document", resourceId: "doc-1"));
 
-        using var response = await _client.GetAsync("/api/v1/audit-events?actorId=actor-1");
+        using var response = await _client.GetAsync(
+            $"/api/v1/audit-events?{filterName}={Uri.EscapeDataString(filterValue)}");
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadFromJsonAsync<AuditEventListResponse>();
 
         Assert.NotNull(body);
-        Assert.Equal(2, body!.Items.Count);
-        Assert.All(body.Items, item => Assert.Equal("actor-1", item.ActorId));
+        var events = new[] { first, second, third, fourth };
+        var expected = expectedIndices.Split(',').Select(index =>
+            events[int.Parse(index, CultureInfo.InvariantCulture)]!.EventId);
+        Assert.Equal(expected, body!.Items.Select(item => item.EventId));
     }
 
     [Fact]
@@ -250,6 +260,58 @@ public sealed class AuditEventApiTests : IDisposable
         Assert.Single(secondPage!.Items);
         Assert.Null(secondPage.NextCursor);
         Assert.DoesNotContain(secondPage.Items, item => firstPage.Items.Any(f => f.EventId == item.EventId));
+    }
+
+    [Fact]
+    public async Task GetContinuesKeysetPaginationWhenMatchingEventsAreAppendedBetweenPages()
+    {
+        await _fixture.ResetAsync();
+
+        var first = await AppendAsync(
+            CreateRequestBody(actorId: "paged-actor", resourceId: "before-1"));
+        var second = await AppendAsync(
+            CreateRequestBody(actorId: "paged-actor", resourceId: "before-2"));
+        var third = await AppendAsync(
+            CreateRequestBody(actorId: "paged-actor", resourceId: "before-3"));
+        await AppendAsync(
+            CreateRequestBody(actorId: "other-actor", resourceId: "unrelated"));
+
+        using var firstPageResponse = await _client.GetAsync(
+            "/api/v1/audit-events?actorId=paged-actor&limit=2");
+        firstPageResponse.EnsureSuccessStatusCode();
+        var firstPage = await firstPageResponse.Content.ReadFromJsonAsync<AuditEventListResponse>();
+
+        Assert.NotNull(firstPage);
+        Assert.Equal(new[] { first.EventId, second.EventId }, firstPage!.Items.Select(item => item.EventId));
+        Assert.NotNull(firstPage.NextCursor);
+
+        var fourth = await AppendAsync(
+            CreateRequestBody(actorId: "paged-actor", resourceId: "after-1"));
+        var fifth = await AppendAsync(
+            CreateRequestBody(actorId: "paged-actor", resourceId: "after-2"));
+
+        using var secondPageResponse = await _client.GetAsync(
+            $"/api/v1/audit-events?actorId=paged-actor&limit=3&cursor={Uri.EscapeDataString(firstPage.NextCursor!)}");
+        secondPageResponse.EnsureSuccessStatusCode();
+        var secondPage = await secondPageResponse.Content.ReadFromJsonAsync<AuditEventListResponse>();
+
+        Assert.NotNull(secondPage);
+        Assert.Equal(
+            new[] { third.EventId, fourth.EventId, fifth.EventId },
+            secondPage!.Items.Select(item => item.EventId));
+        Assert.Null(secondPage.NextCursor);
+        Assert.Empty(secondPage.Items.IntersectBy(
+            firstPage.Items.Select(item => item.EventId),
+            item => item.EventId));
+        Assert.All(secondPage.Items, item => Assert.Equal("paged-actor", item.ActorId));
+    }
+
+    private async Task<AuditEventResponse> AppendAsync(object body)
+    {
+        using var response = await _client.PostAsJsonAsync("/api/v1/audit-events", body);
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<AuditEventResponse>())!;
     }
 
     [Fact]

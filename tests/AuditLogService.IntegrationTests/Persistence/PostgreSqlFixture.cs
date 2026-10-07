@@ -12,15 +12,13 @@ namespace AuditLogService.IntegrationTests.Persistence;
 
 public sealed class PostgreSqlFixture : IAsyncLifetime
 {
-    private const string DefaultConnectionString =
-        "Host=localhost;Port=5433;Database=audit_log_test;Username=audit_log;Password=audit_log_development";
-
     private readonly IDbContextFactory<AuditLogDbContext> _dbContextFactory;
 
     public PostgreSqlFixture()
     {
         ConnectionString = Environment.GetEnvironmentVariable("AUDITLOG_TEST_CONNECTION_STRING")
-            ?? DefaultConnectionString;
+            ?? throw new InvalidOperationException(
+                "Set AUDITLOG_TEST_CONNECTION_STRING to a disposable dedicated test database; tests reset its data.");
         _dbContextFactory = new SimpleDbContextFactory(BuildOptions());
     }
 
